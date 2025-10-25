@@ -1,0 +1,77 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+// ─────────────── MODELOS PRINCIPALES ───────────────
+
+model User {
+    id        Int       @id @default(autoincrement())
+    name      String
+    email     String    @unique
+    password  String
+    xp        Int       @default(0)
+    level     Int       @default(1)
+    avatar    String?
+    role      Role      @default(USER)  // 👈 Nuevo campo
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+
+    boards     Board[]
+    progresses Progress[]
+}
+
+model Board {
+    id          Int       @id @default(autoincrement())
+    title       String
+    description String?
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @updatedAt
+
+    userId Int
+    user   User       @relation(fields: [userId], references: [id])
+    tasks  Task[]
+}
+
+model Task {
+    id          Int        @id @default(autoincrement())
+    title       String
+    description String?
+    status      TaskStatus @default(TODO)
+    xpReward    Int        @default(10)
+    createdAt   DateTime   @default(now())
+    updatedAt   DateTime   @updatedAt
+
+    boardId Int
+    board   Board @relation(fields: [boardId], references: [id])
+    progresses Progress[]
+}
+
+model Progress {
+    id        Int       @id @default(autoincrement())
+    xpEarned  Int
+    createdAt DateTime  @default(now())
+
+    userId Int
+    taskId Int
+
+    user User @relation(fields: [userId], references: [id])
+    task Task @relation(fields: [taskId], references: [id])
+}
+
+// ─────────────── ENUMS ───────────────
+
+enum TaskStatus {
+    TODO
+    IN_PROGRESS
+    DONE
+}
+
+enum Role {
+    USER
+    ADMIN
+}
