@@ -10,65 +10,123 @@ datasource db {
 // ─────────────── MODELOS PRINCIPALES ───────────────
 
 model User {
-    id        Int       @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
     name      String
-    email     String    @unique
+    email     String   @unique
     password  String
-    xp        Int       @default(0)
-    level     Int       @default(1)
+    xp        Int      @default(0)
+    level     Int      @default(1)
     avatar    String?
-    role      Role      @default(USER)  // 👈 Nuevo campo
-    createdAt DateTime  @default(now())
-    updatedAt DateTime  @updatedAt
+    role      Role     @default(USER)
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
 
-    boards     Board[]
-    progresses Progress[]
+    boards   Board[]
+    progress Progress[]
+
+    assignedTasks        Task[]            @relation("AssignedTasks")
+    workspaceMemberships WorkspaceMember[]
+    Workspace            Workspace[]
+}
+
+model Workspace {
+    id          Int      @id @default(autoincrement())
+    name        String
+    description String?
+    ownerId     Int? // opcional, para auditoría/UX
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    owner   User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+    members WorkspaceMember[]
+    boards  Board[]
+
+    @@unique([name, ownerId]) // evita duplicados por propietario
+    @@index([ownerId])
+}
+
+model WorkspaceMember {
+    id          Int           @id @default(autoincrement())
+    userId      Int
+    workspaceId Int
+    role        WorkspaceRole @default(MEMBER)
+
+    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+    workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+    @@unique([userId, workspaceId])
+    @@index([workspaceId, role])
+    @@index([userId])
 }
 
 model Board {
-    id          Int       @id @default(autoincrement())
+    id          Int      @id @default(autoincrement())
     title       String
     description String?
-    createdAt   DateTime  @default(now())
-    updatedAt   DateTime  @updatedAt
+    order       Int      @default(0)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    workspaceId Int
+    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
     userId Int
-    user   User       @relation(fields: [userId], references: [id])
+    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
     tasks  Task[]
+
+    @@index([workspaceId])
 }
 
 model Task {
     id          Int        @id @default(autoincrement())
     title       String
     description String?
-    status      TaskStatus @default(TODO)
+    status      TaskStatus @default(TO_DO)
     xpReward    Int        @default(10)
+    order       Int        @default(0)
     createdAt   DateTime   @default(now())
     updatedAt   DateTime   @updatedAt
 
     boardId Int
-    board   Board @relation(fields: [boardId], references: [id])
-    progresses Progress[]
+    board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+    assignedToId Int? // 👈 futura expansión: responsable de la tarea
+    assignedTo   User? @relation("AssignedTasks", fields: [assignedToId], references: [id])
+
+    progress Progress[]
+
+    @@index([boardId])
+    @@index([status])
 }
 
 model Progress {
-    id        Int       @id @default(autoincrement())
+    id        Int      @id @default(autoincrement())
     xpEarned  Int
-    createdAt DateTime  @default(now())
+    createdAt DateTime @default(now())
 
     userId Int
     taskId Int
 
-    user User @relation(fields: [userId], references: [id])
-    task Task @relation(fields: [taskId], references: [id])
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+    @@index([userId])
+    @@index([taskId])
 }
 
 // ─────────────── ENUMS ───────────────
 
 enum TaskStatus {
-    TODO
+    TO_DO
     IN_PROGRESS
     DONE
+    BLOCKED
+}
+
+enum WorkspaceRole {
+    OWNER
+    ADMIN
+    MEMBER
 }
 
 enum Role {
