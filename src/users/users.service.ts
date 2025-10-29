@@ -1,25 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma/prisma.service';
-import * as bcrypt from 'bcrypt';
+import { PrismaService } from '@prisma/prisma.service';
+
+/**
+ * Servicio de Usuarios
+ * Gestiona la lectura, actualización y eliminación de usuarios.
+ * No maneja autenticación ni contraseñas (eso se delega a AuthService).
+ */
 
 @Injectable()
 export class UsersService {
     constructor(private readonly prisma: PrismaService) {}
 
-    // Crear un nuevo usuario
-    async create(data: { name: string; email: string; password: string; role?: 'USER' | 'ADMIN' }) {
-    const hashedPassword = await bcrypt.hash(data.password, 10);
-    return this.prisma.user.create({
-        data: {
-            name: data.name,
-            email: data.email,
-            password: hashedPassword,
-            role: data.role ?? 'USER',
-        },
-    });
-}
+    /**
+     * Retorna todos los usuarios registrados.
+     * (Ideal para vistas administrativas o debugging.)
+     */
 
-    // Buscar todos los usuarios
     async findAll() {
         return this.prisma.user.findMany({
             select: {
@@ -32,7 +28,11 @@ export class UsersService {
         });
     }
 
-    // Buscar un usuario por email (útil para login)
+    /**
+     * Busca un usuario por su correo electrónico.
+     * Se usa internamente por AuthService durante el login.
+     */
+
     async findByEmail(email: string) {
         const user = await this.prisma.user.findUnique({
             where: { email },
@@ -41,7 +41,10 @@ export class UsersService {
         return user;
     }
 
-    // Buscar un usuario por ID
+    /**
+     * Busca un usuario por ID (para vistas de perfil o debugging).
+     */
+
     async findById(id: number) {
         const user = await this.prisma.user.findUnique({
             where: { id },
@@ -57,29 +60,34 @@ export class UsersService {
         return user;
     }
 
-async update(id: number, data: Partial<{ name: string; password: string }>) {
+    /**
+     * Actualiza datos básicos de perfil (nombre o avatar).
+     * No modifica contraseñas ni roles.
+     */
+
+    async update(id: number, data: Partial<{ name: string; avatar?: string }>) {
         const user = await this.prisma.user.findUnique({ where: { id } });
         if (!user) throw new NotFoundException('Usuario no encontrado');
 
-        const updateData: any = { ...data };
-        if (data.password) {
-            updateData.password = await bcrypt.hash(data.password, 10);
-        }
-
         return this.prisma.user.update({
             where: { id },
-            data: updateData,
+            data,
             select: {
                 id: true,
                 name: true,
                 email: true,
                 xp: true,
                 level: true,
+                avatar: true,
             },
         });
     }
 
-    // Eliminar un usuario
+    /**
+     * Elimina un usuario de la base de datos.
+     * ⚠️ Debería estar protegido por RolesGuard ('ADMIN') una vez activemos los roles.
+     */
+    
     async delete(id: number) {
         return this.prisma.user.delete({
             where: { id },

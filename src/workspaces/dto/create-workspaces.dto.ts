@@ -1,5 +1,8 @@
-import { IsInt, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString, IsNotEmpty } from 'class-validator';
 
+/**
+ * DTO para crear un nuevo Workspace.
+ */
 export class CreateWorkspaceDto {
     @IsString()
     @IsNotEmpty()
@@ -8,7 +11,4 @@ export class CreateWorkspaceDto {
     @IsString()
     @IsOptional()
     description?: string;
-
-    @IsInt()
-    ownerId: number; // temporal: luego se obtiene del JWT
 }

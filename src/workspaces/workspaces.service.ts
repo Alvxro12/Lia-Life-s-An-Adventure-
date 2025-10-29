@@ -1,16 +1,25 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from 'src/common/prisma/prisma.service';
+import { PrismaService } from '@prisma/prisma.service';
 import { CreateWorkspaceDto } from './dto/create-workspaces.dto';
 import { UpdateWorkspaceDto } from './dto/update-workspaces.dto';
 
+/**
+ * Servicio de Workspaces
+ * Encargado de crear, consultar, actualizar y eliminar espacios de trabajo.
+ * Aplica validaciones de pertenencia y rol (OWNER vs MEMBER).
+ */
 @Injectable()
 export class WorkspacesService {
     constructor(private prisma: PrismaService) {}
 
-    async create(dto: CreateWorkspaceDto) {
-        // Verificar que no exista un workspace con el mismo nombre para ese owner
+    /**
+     * Crea un nuevo workspace.
+     * - Verifica que no exista otro con el mismo nombre para el mismo usuario.
+     * - Asigna automáticamente al usuario autenticado como OWNER.
+     */
+    async create(dto: CreateWorkspaceDto, userId: number) {
         const exists = await this.prisma.workspace.findFirst({
-            where: { name: dto.name, ownerId: dto.ownerId },
+            where: { name: dto.name, ownerId: userId },
         });
         if (exists) throw new ForbiddenException('Ya existe un workspace con ese nombre');
 
@@ -18,10 +27,10 @@ export class WorkspacesService {
             data: {
                 name: dto.name,
                 description: dto.description,
-                ownerId: dto.ownerId,
+                ownerId: userId,
                 members: {
                     create: {
-                        userId: dto.ownerId,
+                        userId,
                         role: 'OWNER',
                     },
                 },
@@ -30,8 +39,10 @@ export class WorkspacesService {
         });
     }
 
+    /**
+     * Retorna todos los workspaces donde el usuario autenticado es miembro.
+     */
     async findAll(userId: number) {
-        // Retorna los workspaces donde el usuario es miembro
         return this.prisma.workspace.findMany({
             where: { members: { some: { userId } } },
             include: {
@@ -42,6 +53,9 @@ export class WorkspacesService {
         });
     }
 
+    /**
+     * Retorna un workspace específico solo si el usuario es miembro.
+     */
     async findOne(id: number, userId: number) {
         const workspace = await this.prisma.workspace.findUnique({
             where: { id },
@@ -53,12 +67,16 @@ export class WorkspacesService {
         });
         if (!workspace) throw new NotFoundException('Workspace no encontrado');
 
+        // Verifica membresía
         const isMember = workspace.members.some((m) => m.userId === userId);
         if (!isMember) throw new ForbiddenException('No tienes acceso a este workspace');
 
         return workspace;
     }
 
+    /**
+     * Actualiza un workspace (solo si el usuario autenticado es OWNER).
+     */
     async update(id: number, userId: number, dto: UpdateWorkspaceDto) {
         const workspace = await this.prisma.workspace.findUnique({
             where: { id },
@@ -77,6 +95,9 @@ export class WorkspacesService {
         });
     }
 
+    /**
+     * Elimina un workspace (solo si el usuario autenticado es OWNER).
+     */
     async remove(id: number, userId: number) {
         const workspace = await this.prisma.workspace.findUnique({
             where: { id },

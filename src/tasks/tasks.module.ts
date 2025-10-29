@@ -1,10 +1,13 @@
 import { Module } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { TasksController } from './tasks.controller';
-import { PrismaService } from 'src/common/prisma/prisma.service';
 
+/**
+ * Módulo de Tareas
+ * Agrupa la lógica de gestión de tareas y XP.
+ */
 @Module({
     controllers: [TasksController],
-    providers: [TasksService, PrismaService],
+    providers: [TasksService],
 })
 export class TasksModule {}
