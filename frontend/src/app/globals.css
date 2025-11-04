@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+/* stylelint-disable-next-line unknownAtRules */
+@theme {
+  --color-background: #111111;
+  --color-text: #EAE6D9;
+  --color-accent: #BFA35C;
+
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-serif: "Cinzel", serif;
+
+  --shadow-glow: 0 0 15px rgba(191, 163, 92, 0.3);
+}
