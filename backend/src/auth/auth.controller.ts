@@ -22,10 +22,12 @@ export class AuthController {
     }
     
     @UseGuards(JwtAuthGuard)
-@Get('profile')
-getProfile(@User() user: any) {
-    return {
-        message: `Hola ${user.email}, tu ID es ${user.id}`,
-    };
-}
+    @Get('profile')
+    // 📌 Endpoint de verificación rápida de token.
+    // Considera devolver datos tipados (DTO) para evitar exponer campos sensibles.
+    getProfile(@User() user: any) {
+        return {
+            message: `Hola ${user.email}, tu ID es ${user.id}`,
+        };
+    }
 }

@@ -49,6 +49,11 @@ interface LiaStore {
     ) => void;
 }
 
+/**
+ * ⚙️ Store temporal basado en Zustand + persist.
+ * Cuando conectemos con el backend deberíamos reemplazar cada mutación por llamadas API
+ * y sincronizar el estado mediante React Query o websockets.
+ */
 export const useLiaStore = create<LiaStore>()(
     persist(
         (set, get) => ({

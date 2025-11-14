@@ -29,6 +29,7 @@ export default function DashboardLayout({
             <div className="flex pt-16 h-full"> 
                 {/* 4rem = altura del navbar */}
                 {/* 💻 Sidebar fijo (escritorio) */}
+                {/* TODO(@tech-lead): sincronizar este menú con estado global en vez de usar open={false}. */}
                 <AppMenu variant="workspace" open={false} setOpen={() => {}} />
                 {/* 📱 Drawer lateral (móvil) */}
                 <AppMenu variant="workspace" open={open} setOpen={setOpen} isMobile />

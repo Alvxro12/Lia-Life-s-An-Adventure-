@@ -1,31 +1,27 @@
 "use client";
 
-import { useState } from "react";
-import { mockData } from "@/data/mock";
-import type { Workspace } from "@/types/workspace";
+import { useCallback } from "react";
+import { useLiaStore } from "@/store/UseLiaStore";
 
+/**
+ * Hook fino que encapsula el acceso al Zustand store.
+ *
+ * 🚨 Riesgo detectado: si en el futuro migramos a datos remotos (React Query / SWR)
+ * este hook será el punto único a reemplazar, evitando que componentes importen
+ * directamente el store. Mantener este wrapper evita acoplar UI a la implementación.
+ */
 export function useWorkspaces() {
-    const [workspaces, setWorkspaces] = useState<Workspace[]>(mockData.workspaces);
+    const workspaces = useLiaStore((state) => state.workspaces);
+    const createWorkspace = useLiaStore((state) => state.createWorkspace);
 
-    function getWorkspace(id: string) {
-        return workspaces.find((w) => w.id === id);
-    }
-
-    function createWorkspace(name: string, description = "") {
-        const newWorkspace: Workspace = {
-            id: `w${Date.now()}`,
-            name,
-            description,
-            boards: []
-        };
-
-        setWorkspaces((prev) => [...prev, newWorkspace]);
-        return newWorkspace;
-    }
+    const getWorkspace = useCallback(
+        (id: string) => workspaces.find((workspace) => workspace.id === id),
+        [workspaces],
+    );
 
     return {
         workspaces,
         getWorkspace,
-        createWorkspace
+        createWorkspace,
     };
 }

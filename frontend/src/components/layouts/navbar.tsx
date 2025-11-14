@@ -10,8 +10,10 @@ export function Navbar() {
     const [open, setOpen] = useState(false);
     const pathname = usePathname();
 
-    // Detecta si estás en el dashboard o en la landing
-    const isDashboard = pathname.startsWith("/dashboard");
+    // Detecta si estamos bajo el app router privado.
+    // 🔎 Importante: las rutas protegidas viven en /workspace, no en /dashboard.
+    // Si volvemos a renombrar la sección privada, recuerda ajustar este prefijo.
+    const isWorkspace = pathname.startsWith("/workspace");
 
     return (
         <>
@@ -22,7 +24,7 @@ export function Navbar() {
                     </Link>
 
                     {/* Enlaces desktop (solo landing) */}
-                    {!isDashboard && (
+                    {!isWorkspace && (
                         <div className="hidden md:flex gap-6 font-sans text-text/80">
                             <Link href="#features" className="hover:text-accent transition">
                                 Características
@@ -45,7 +47,7 @@ export function Navbar() {
 
             {/* Drawer unificado */}
             <AppMenu
-                variant={isDashboard ? "dashboard" : "landing"}
+                variant={isWorkspace ? "workspace" : "landing"}
                 open={open}
                 setOpen={setOpen}
                 isMobile
