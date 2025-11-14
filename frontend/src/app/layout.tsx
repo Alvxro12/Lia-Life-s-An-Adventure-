@@ -1,5 +1,6 @@
 import "./globals.css";
 import type { Metadata } from "next";
+import { Toaster } from "sonner";
 import { Lora, Merriweather } from "next/font/google";
 
 const lora = Lora({
@@ -30,8 +31,9 @@ export default function RootLayout({
             lang="es"
             className={`dark ${lora.variable} ${merriweather.variable}`}
         >
-            <body className="bg-background text-text font-sans antialiased">
+            <body className="bg-background text-text antialiased">
                 {children}
+                <Toaster richColors position="top-right" />
             </body>
         </html>
     );
