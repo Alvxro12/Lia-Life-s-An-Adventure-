@@ -1,5 +1,5 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '@prisma/prisma.service';
+import { PrismaService } from '../common/prisma/prisma.service';
 import { CreateTaskDto } from './dto/create-task.dto';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { MoveTaskDto } from './dto/move-task.dto';
@@ -60,11 +60,17 @@ export class TasksService {
 
     /**
      * Actualiza información de una tarea (nombre, descripción, estado, etc.).
-     * No requiere membresía explícita, asume que la seguridad se maneja desde el frontend.
+     * 🔒 Seguridad: validamos que el usuario sea miembro del workspace antes de permitir cambios.
      */
-    async update(id: number, dto: UpdateTaskDto) {
-        const task = await this.prisma.task.findUnique({ where: { id } });
+    async update(id: number, dto: UpdateTaskDto, userId: number) {
+        const task = await this.prisma.task.findUnique({
+            where: { id },
+            include: { board: { include: { workspace: { include: { members: true } } } } },
+        });
         if (!task) throw new NotFoundException('Tarea no encontrada');
+
+        const isMember = task.board.workspace.members.some((member) => member.userId === userId);
+        if (!isMember) throw new ForbiddenException('No perteneces a este workspace');
 
         return this.prisma.task.update({
             where: { id },
@@ -121,8 +127,12 @@ export class TasksService {
     async complete(id: number, userId: number) {
         const task = await this.prisma.task.findUnique({
             where: { id },
+            include: { board: { include: { workspace: { include: { members: true } } } } },
         });
         if (!task) throw new NotFoundException('Tarea no encontrada');
+
+        const isMember = task.board.workspace.members.some((member) => member.userId === userId);
+        if (!isMember) throw new ForbiddenException('No perteneces a este workspace');
 
         await this.prisma.task.update({
             where: { id },

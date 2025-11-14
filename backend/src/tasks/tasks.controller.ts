@@ -27,8 +27,9 @@ export class TasksController {
     }
 
     @Patch(':id')
-    update(@Param('id') id: string, @Body() dto: UpdateTaskDto) {
-        return this.tasksService.update(Number(id), dto);
+    // 🔐 Pasamos el userId para que el service valide membresía antes de actualizar la tarea.
+    update(@Param('id') id: string, @Body() dto: UpdateTaskDto, @User('id') userId: number) {
+        return this.tasksService.update(Number(id), dto, userId);
     }
 
     @Patch(':id/move')

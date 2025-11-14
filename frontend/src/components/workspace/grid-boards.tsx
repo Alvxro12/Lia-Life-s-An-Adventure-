@@ -9,12 +9,22 @@ interface BoardsGridProps {
 }
 
 export function BoardsGrid({ workspaceId }: BoardsGridProps) {
-    const workspaces = useLiaStore((s) => s.workspaces);
     const createBoard = useLiaStore((s) => s.createBoard);
+    const { boards, workspace } = useBoards(workspaceId);
 
-    const workspace = workspaces.find(w => w.id === workspaceId);
-    const boards = workspace?.boards ?? [];
-
+    // ⚠️ Si no existe el workspace mostramos un placeholder pero mantenemos la UI lista para hidratarse.
+    if (!workspace) {
+        return (
+            <section className="space-y-6">
+                <h2 className="text-lg font-semibold tracking-wide text-accent">
+                    Tableros de misión
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                    Cargando información del workspace...
+                </p>
+            </section>
+        );
+    }
 
     return (
         <section className="space-y-6">

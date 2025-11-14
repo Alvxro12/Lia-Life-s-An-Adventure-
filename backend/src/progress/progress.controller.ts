@@ -19,6 +19,8 @@ export class ProgressController {
      * En producción, el progreso se genera automáticamente al completar tareas.
      */
     @Post()
+    // ⚠️ Exponer este endpoint sin RolesGuard permite que cualquier usuario manipule su XP.
+    // Activa un guard de ADMIN antes de lanzar a producción.
     create(@Body() dto: CreateProgressDto) {
         return this.progressService.create(dto);
     }
