@@ -26,13 +26,12 @@ export const NAV_LINKS: {
     landing: [
         { href: "#features", label: "Características" },
         { href: "#about", label: "Sobre LIA" },
-        { href: "/workspace", label: "Iniciar Sesión" },
-        { href: "#register", label: "Únete a la aventura" },
+        { href: "/login", label: "Iniciar Sesión" },
+        { href: "/register", label: "Regístrate" },
     ],
     workspace: [
         { href: "/workspace", icon: Home, label: "Inicio" },
-        { href: "/workspace/boards", icon: Book, label: "Tableros" },
-        { href: "/workspace/profile", icon: Settings, label: "Perfil" },
+        { href: "/home", icon: Book, label: "Tableros" },
     ],
 };
 

@@ -1,10 +1,10 @@
-import { Navbar } from "@/components/layouts/navbar";
+import { NavbarPublic } from "@/components/layouts/navbarPublic";
 import {HeroSection} from "@/components/sections/hero"
 
 export default function HomePage() {
     return (
         <section className="pt-16">
-        <Navbar></Navbar>
+        <NavbarPublic></NavbarPublic>
             <main>
                 <HeroSection />
             </main>

@@ -19,6 +19,12 @@ export const mockWorkspaces: Workspace[] = [
                                 title: "Reescribir hooks",
                                 completed: false,
                                 xp: 10
+                            },
+                            {
+                                id: "t2",
+                                title: "Reescribir  2.0",
+                                completed: false,
+                                xp: 10
                             }
                         ]
                     }
@@ -29,7 +35,7 @@ export const mockWorkspaces: Workspace[] = [
     {
         id: "w2",
         name: "Templo del Conocimiento",
-        description: "Donde estudias pa’ volverte sabio",
+        description: "Donde estudias pa volverte sabio",
         boards: [
             {
                 id: "b2",

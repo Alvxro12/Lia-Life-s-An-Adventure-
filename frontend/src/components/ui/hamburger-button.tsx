@@ -6,12 +6,19 @@ import { Menu, X } from "lucide-react";
 interface HamburgerButtonProps {
     open: boolean;
     setOpen: (v: boolean) => void;
+    onToggleSidebar?: () => void;
 }
 
-export function HamburgerButton({ open, setOpen }: HamburgerButtonProps) {
+export function HamburgerButton({ open, setOpen, onToggleSidebar }: HamburgerButtonProps) {
+
+    function handleClick() {
+        setOpen(!open);                     // anima el botón
+        onToggleSidebar?.();                // abre/cierra el sidebar desde el layout
+    }
+
     return (
         <button
-            onClick={() => setOpen(!open)}
+            onClick={handleClick}
             aria-expanded={open}
             aria-label="Abrir menú"
             className="flex items-center justify-center w-10 h-10 rounded-xl border border-accent/30 bg-background hover:bg-accent/10 transition-colors"

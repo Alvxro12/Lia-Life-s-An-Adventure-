@@ -1,22 +1,121 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+
 import type { Workspace, Board, BoardList, Task } from "@/types/workspace";
 import { mockWorkspaces } from "@/data/mock";
 
-interface LiaStore {
+/** Services por dominio */
+import { WorkspaceService } from "@/services/workspace.service";
+import { BoardService } from "@/services/board.service";
+import { ListService } from "@/services/list.service";
+import { TaskService } from "@/services/task.service";
+
+/* ------------------------------------------------------------------ */
+/* 🧩 Tipos auxiliares para creación desde el frontend                 */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Payload para crear una nueva lista (column) desde el frontend.
+ * Coincide con lo que espera el ListService.
+ */
+export type NewBoardList = {
+    id: string;
+    title: string;
+    tasks?: Task[];
+};
+
+/**
+ * Payload para crear una nueva task desde el frontend.
+ * Coincide con lo que espera el TaskService.
+ */
+export type NewTask = {
+    id: string;
+    title: string;
+    xp?: number;
+};
+
+/* ------------------------------------------------------------------ */
+/* 🧱 Estado base del store (LiaState)                                 */
+/* ------------------------------------------------------------------ */
+
+export type LiaState = {
+    /** Lista de workspaces del usuario (cada uno con boards, listas y tasks) */
     workspaces: Workspace[];
+};
 
+/* ------------------------------------------------------------------ */
+/* 🧠 Interfaz del Store (acciones disponibles)                        */
+/* ------------------------------------------------------------------ */
+
+interface LiaStore extends LiaState {
+    /* ============ WORKSPACES ============ */
+
+    /** Crea un nuevo workspace vacío */
     createWorkspace: (name: string, description?: string) => void;
-    createBoard: (workspaceId: string, name: string) => void;
-    createList: (workspaceId: string, boardId: string, title: string) => void;
 
+    /** Actualiza datos de un workspace (nombre, descripción, etc.) */
+    updateWorkspace: (
+        workspaceId: string,
+        changes: Partial<Workspace>
+    ) => void;
+
+    /** Elimina un workspace y todo lo que cuelga de él */
+    deleteWorkspace: (workspaceId: string) => void;
+
+    /* ============ BOARDS ============ */
+
+    /** Crea un board dentro de un workspace */
+    createBoard: (workspaceId: string, name: string) => void;
+
+    /** Actualiza atributos de un board (nombre, etc.) */
+    updateBoard: (
+        workspaceId: string,
+        boardId: string,
+        changes: Partial<Board>
+    ) => void;
+
+    /** Elimina un board de un workspace */
+    deleteBoard: (workspaceId: string, boardId: string) => void;
+
+    /* ============ LISTS (COLUMNS) ============ */
+
+    /** Crea una lista (columna) en un board */
+    createList: (
+        workspaceId: string,
+        boardId: string,
+        payload: NewBoardList
+    ) => void;
+
+    /** Actualiza propiedades de una lista (título, etc.) */
+    updateList: (
+        workspaceId: string,
+        boardId: string,
+        listId: string,
+        changes: Partial<BoardList>
+    ) => void;
+
+    /** Elimina una lista completa de un board */
+    deleteList: (workspaceId: string, boardId: string, listId: string) => void;
+
+    /** Reordena listas dentro de un board (drag & drop) */
+    moveList: (
+        workspaceId: string,
+        boardId: string,
+        oldIndex: number,
+        newIndex: number
+    ) => void;
+
+    /* ============ TASKS ============ */
+
+    /** Crea una tarea dentro de una lista */
     createTask: (
         workspaceId: string,
         boardId: string,
         listId: string,
-        title: string
+        payload: NewTask
     ) => void;
 
+    /** Marca una tarea como completada / no completada */
     toggleTask: (
         workspaceId: string,
         boardId: string,
@@ -24,14 +123,16 @@ interface LiaStore {
         taskId: string
     ) => void;
 
+    /** Actualiza el título de una tarea */
     updateTaskTitle: (
         workspaceId: string,
         boardId: string,
         listId: string,
         taskId: string,
-        title: string
+        newTitle: string
     ) => void;
 
+    /** Elimina una tarea de una lista */
     deleteTask: (
         workspaceId: string,
         boardId: string,
@@ -39,6 +140,7 @@ interface LiaStore {
         taskId: string
     ) => void;
 
+    /** Mueve una tarea entre listas o dentro de la misma lista (drag & drop) */
     moveTask: (
         workspaceId: string,
         boardId: string,
@@ -49,205 +151,115 @@ interface LiaStore {
     ) => void;
 }
 
+/* ------------------------------------------------------------------ */
+/* 🏪 Store principal (Zustand + persist)                              */
+/* ------------------------------------------------------------------ */
+
 export const useLiaStore = create<LiaStore>()(
     persist(
         (set, get) => ({
-            workspaces: mockWorkspaces,
+            /* ---------------------- Estado inicial ---------------------- */
+            workspaces: [],
 
-            /* --------------------- CREATE WORKSPACE --------------------- */
-            createWorkspace: (name, description = "") => {
-                const newWorkspace: Workspace = {
-                    id: `w${Date.now()}`,
-                    name,
-                    description,
-                    boards: [],
-                };
+            /* ===================== WORKSPACES ====================== */
 
-                set((state) => ({
-                    workspaces: [...state.workspaces, newWorkspace],
-                }));
-            },
+            /**
+             * Crea un workspace sin boards.
+             */
+            createWorkspace: (name, description = "") =>
+                WorkspaceService.create({ name, description }, set, get),
 
-            /* ------------------------ CREATE BOARD ------------------------ */
-            createBoard: (workspaceId, name) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
+            /**
+             * Actualiza campos de un workspace (nombre, descripción, etc.).
+             */
+            updateWorkspace: (workspaceId, changes) =>
+                WorkspaceService.update(workspaceId, changes, set, get),
 
-                        const newBoard: Board = {
-                            id: `b${Date.now()}`,
-                            name,
-                            lists: [],
-                        };
+            /**
+             * Elimina un workspace completo (y sus boards).
+             */
+            deleteWorkspace: (workspaceId) =>
+                WorkspaceService.delete(workspaceId, set, get),
 
-                        return {
-                            ...ws,
-                            boards: [...ws.boards, newBoard],
-                        };
-                    }),
-                }));
-            },
+            /* ======================== BOARDS ======================== */
 
-            /* ------------------------ CREATE LIST ------------------------- */
-            createList: (workspaceId, boardId, title) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
+            /**
+             * Crea un board dentro de un workspace.
+             */
+            createBoard: (workspaceId, name) =>
+                BoardService.create(workspaceId, name, set, get),
 
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
+            /**
+             * Actualiza atributos de un board (por ahora, típicamente el nombre).
+             */
+            updateBoard: (workspaceId, boardId, changes) =>
+                BoardService.update(workspaceId, boardId, changes, set, get),
 
-                                const newList: BoardList = {
-                                    id: `l${Date.now()}`,
-                                    title,
-                                    tasks: [],
-                                };
+            /**
+             * Elimina un board del workspace.
+             */
+            deleteBoard: (workspaceId, boardId) =>
+                BoardService.delete(workspaceId, boardId, set, get),
 
-                                return {
-                                    ...board,
-                                    lists: [...board.lists, newList],
-                                };
-                            }),
-                        };
-                    }),
-                }));
-            },
+            /* =================== LISTS (COLUMNS) =================== */
 
-            /* ------------------------ CREATE TASK ------------------------- */
-            createTask: (workspaceId, boardId, listId, title) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
+            /**
+             * Crea una nueva lista dentro de un board.
+             * Se usa para crear columnas tipo "Por hacer", "En progreso", etc.
+             */
+            createList: (workspaceId, boardId, payload) =>
+                ListService.create(workspaceId, boardId, payload, set, get),
 
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
+            /**
+             * Actualiza una lista (por ejemplo, renombrar el título).
+             */
+            updateList: (workspaceId, boardId, listId, changes) =>
+                ListService.update(workspaceId, boardId, listId, changes, set, get),
 
-                                return {
-                                    ...board,
-                                    lists: board.lists.map((list) => {
-                                        if (list.id !== listId) return list;
+            /**
+             * Elimina por completo una lista (columna) y sus tareas.
+             */
+            deleteList: (workspaceId, boardId, listId) =>
+                ListService.delete(workspaceId, boardId, listId, set, get),
 
-                                        const newTask: Task = {
-                                            id: `t${Date.now()}`,
-                                            title,
-                                            completed: false,
-                                            xp: 10,
-                                        };
+            /**
+             * Reordena listas dentro de un mismo board (drag & drop horizontal).
+             */
+            moveList: (workspaceId, boardId, oldIndex, newIndex) =>
+                ListService.move(workspaceId, boardId, oldIndex, newIndex, set, get),
 
-                                        return {
-                                            ...list,
-                                            tasks: [...list.tasks, newTask],
-                                        };
-                                    }),
-                                };
-                            }),
-                        };
-                    }),
-                }));
-            },
+            /* ========================= TASKS ========================= */
 
-            /* -------------------------- TOGGLE TASK ------------------------- */
-            toggleTask: (workspaceId, boardId, listId, taskId) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
+            /**
+             * Crea una nueva tarea dentro de una lista.
+             */
+            createTask: (workspaceId, boardId, listId, payload) =>
+                TaskService.create(workspaceId, boardId, listId, payload, set, get),
 
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
+            /**
+             * Invierte el estado "completed" de una tarea.
+             */
+            toggleTask: (workspaceId: string, boardId: string, listId: string, taskId: string
+        ) =>
+            TaskService.toggle(workspaceId, boardId, listId, taskId, set, get),
 
-                                return {
-                                    ...board,
-                                    lists: board.lists.map((list) => {
-                                        if (list.id !== listId) return list;
 
-                                        return {
-                                            ...list,
-                                            tasks: list.tasks.map((task) =>
-                                                task.id === taskId
-                                                    ? {
-                                                        ...task,
-                                                        completed: !task.completed,
-                                                    }
-                                                    : task
-                                            ),
-                                        };
-                                    }),
-                                };
-                            }),
-                        };
-                    }),
-                }));
-            },
+            /**
+             * Actualiza solo el título de una tarea.
+             */
+            updateTaskTitle: (workspaceId: string, boardId: string, listId: string, taskId: string, newTitle: string
+            ) =>TaskService.updateTitle(workspaceId, boardId, listId, taskId, newTitle, set, get),
 
-            /* ---------------------- UPDATE TASK TITLE ------------------------ */
-            updateTaskTitle: (workspaceId, boardId, listId, taskId, title) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
 
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
+            /**
+             * Elimina una tarea específica de una lista.
+             */
+            deleteTask: (workspaceId: string, boardId: string, listId: string, taskId: string
+            ) => TaskService.delete(workspaceId, boardId, listId, taskId, set, get),
 
-                                return {
-                                    ...board,
-                                    lists: board.lists.map((list) => {
-                                        if (list.id !== listId) return list;
-
-                                        return {
-                                            ...list,
-                                            tasks: list.tasks.map((task) =>
-                                                task.id === taskId
-                                                    ? { ...task, title }
-                                                    : task
-                                            ),
-                                        };
-                                    }),
-                                };
-                            }),
-                        };
-                    }),
-                }));
-            },
-
-            /* -------------------------- DELETE TASK ------------------------- */
-            deleteTask: (workspaceId, boardId, listId, taskId) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
-
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
-
-                                return {
-                                    ...board,
-                                    lists: board.lists.map((list) => {
-                                        if (list.id !== listId) return list;
-
-                                        return {
-                                            ...list,
-                                            tasks: list.tasks.filter(
-                                                (task) => task.id !== taskId
-                                            ),
-                                        };
-                                    }),
-                                };
-                            }),
-                        };
-                    }),
-                }));
-            },
-
-            /* -------------------------- MOVE TASK ---------------------------- */
+            /**
+             * Mueve una tarea entre listas o dentro de la misma lista según índices.
+             */
             moveTask: (
                 workspaceId,
                 boardId,
@@ -255,65 +267,30 @@ export const useLiaStore = create<LiaStore>()(
                 destListId,
                 sourceIndex,
                 destIndex
-            ) => {
-                set((state) => ({
-                    workspaces: state.workspaces.map((ws) => {
-                        if (ws.id !== workspaceId) return ws;
-
-                        return {
-                            ...ws,
-                            boards: ws.boards.map((board) => {
-                                if (board.id !== boardId) return board;
-
-                                const lists = [...board.lists];
-
-                                const sourceListIndex = lists.findIndex(
-                                    (l) => l.id === sourceListId
-                                );
-                                const destListIndex = lists.findIndex(
-                                    (l) => l.id === destListId
-                                );
-
-                                if (sourceListIndex === -1 || destListIndex === -1) {
-                                    return board;
-                                }
-
-                                const sourceTasks = [...lists[sourceListIndex].tasks];
-                                const [movedTask] = sourceTasks.splice(sourceIndex, 1);
-
-                                if (!movedTask) return board;
-
-                                if (sourceListId === destListId) {
-                                    sourceTasks.splice(destIndex, 0, movedTask);
-
-                                    lists[sourceListIndex] = {
-                                        ...lists[sourceListIndex],
-                                        tasks: sourceTasks,
-                                    };
-
-                                    return { ...board, lists };
-                                }
-
-                                const destTasks = [...lists[destListIndex].tasks];
-                                destTasks.splice(destIndex, 0, movedTask);
-
-                                lists[sourceListIndex] = {
-                                    ...lists[sourceListIndex],
-                                    tasks: sourceTasks,
-                                };
-
-                                lists[destListIndex] = {
-                                    ...lists[destListIndex],
-                                    tasks: destTasks,
-                                };
-
-                                return { ...board, lists };
-                            }),
-                        };
-                    }),
-                }));
-            },
+            ) =>
+                TaskService.move(
+                    workspaceId,
+                    boardId,
+                    sourceListId,
+                    destListId,
+                    sourceIndex,
+                    destIndex,
+                    set,
+                    get
+                ),
         }),
-        { name: "lia-data" }
+        {
+            name: "lia-data",
+            /**
+             * Al rehidratar desde localStorage:
+             *  - Si no hay workspaces guardados, usamos mockWorkspaces
+             *    para que el usuario siempre vea algo al entrar por primera vez.
+             */
+            onRehydrateStorage: () => (state) => {
+                if (state && state.workspaces.length === 0) {
+                    state.workspaces = mockWorkspaces;
+                }
+            },
+        }
     )
 );

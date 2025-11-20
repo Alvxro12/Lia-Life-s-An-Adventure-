@@ -3,6 +3,7 @@ export interface Task {
     title: string;
     completed: boolean;
     xp: number;
+    description?: string;
 }
 
 export interface BoardList {
@@ -20,6 +21,6 @@ export interface Board {
 export interface Workspace {
     id: string;
     name: string;
-    description?: string; // 👈 opcional, pero la solemos usar
+    description?: string;
     boards: Board[];
 }
