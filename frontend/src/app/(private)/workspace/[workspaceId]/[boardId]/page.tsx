@@ -11,8 +11,7 @@ import { horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { ListColumn } from "@/components/boards/listColumns";
 import { GapSlot } from "@/components/boards/gapSlot";
 import { ColumnSlot } from "@/components/boards/ColumnSlot";
-import { ColumnsManager } from "@/components/boards/columnsManager";
-
+import { ColumnsManager } from "@/components/boards/columnsManager"
 
 export default function BoardPage() {
     const params = useParams();
@@ -30,7 +29,7 @@ export default function BoardPage() {
     const sensors = useSensors(
     useSensor(PointerSensor, {
         activationConstraint: {
-            delay: 80,      // Trello-style HOLD
+            delay: 100,      // Trello-style HOLD
             tolerance: 5,    // evitar drags accidentales
         },
     })
@@ -216,7 +215,7 @@ export default function BoardPage() {
             }
 
     return (
-        <section className="relative w-full" style={{ height: "calc(100vh - 100px)" }}>
+        <section className="relative w-full" style={{ height: "calc(100vh - 218px)" }}>
             <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
                 <ColumnsManager>
                     <SortableContext items={tempLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
@@ -243,7 +242,6 @@ export default function BoardPage() {
                 {/* Overlay visual */}
                 <DragOverlay>
                     {activeTask && <TaskCardPreview task={activeTask} />}
-
                     {activeList && (() => {
                         const list = tempLists.find((l) => l.id === activeList);
                         if (!list) return null;

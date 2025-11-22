@@ -132,6 +132,17 @@ interface LiaStore extends LiaState {
         newTitle: string
     ) => void;
 
+
+    updateTaskDescription: (
+    workspaceId: string,
+    boardId: string,
+    listId: string,
+    taskId: string,
+    desc: string
+) => void;
+
+
+
     /** Elimina una tarea de una lista */
     deleteTask: (
         workspaceId: string,
@@ -249,6 +260,23 @@ export const useLiaStore = create<LiaStore>()(
              */
             updateTaskTitle: (workspaceId: string, boardId: string, listId: string, taskId: string, newTitle: string
             ) =>TaskService.updateTitle(workspaceId, boardId, listId, taskId, newTitle, set, get),
+
+            updateTaskDescription: (
+                workspaceId: string,
+                boardId: string,
+                listId: string,
+                taskId: string,
+                desc: string
+            ) =>
+                TaskService.updateDescription(
+                    workspaceId,
+                    boardId,
+                    listId,
+                    taskId,
+                    desc,
+                    set,
+                    get
+                ),
 
 
             /**

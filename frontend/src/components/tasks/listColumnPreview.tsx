@@ -1,7 +1,7 @@
 "use client";
 
 import type { Task } from "@/types/workspace";
-import { SortableTaskCard } from "@/components/boards/taskCard"; // usa la misma tarjeta visual
+import { SortableTaskCard } from "@/components/tasks/sortableTaskCard"; // usa la misma tarjeta visual
 
 type Props = {
     id: string;

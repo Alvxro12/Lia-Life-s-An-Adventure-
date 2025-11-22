@@ -39,7 +39,7 @@ export function ColumnSlot(props: ColumnSlotProps) {
 
     <div className="absolute top-0 left-0 w-full h-full pointer-events-none" />
     
-    <div className="relative w-full h-auto pointer-events-auto">
+    <div className="relative w-full h-full pointer-events-auto">
         {/* contenido visual */}
         <ListColumn {...props} dragHandleProps={{ ...attributes, ...listeners }} />
     </div>

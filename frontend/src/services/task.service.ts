@@ -90,6 +90,36 @@ export const TaskService = {
         set({ workspaces: updated });
     },
 
+
+    //Actualizar descripcion en el modal de la task
+    updateDescription(
+    workspaceId: string,
+    boardId: string,
+    listId: string,
+    taskId: string,
+    description: string,
+    set: SetFn,
+    get: GetFn
+) {
+    const { workspaces } = get();
+    const updated = structuredClone(workspaces);
+
+    const ws = findWorkspace(updated, workspaceId);
+    if (!ws) return;
+
+    const board = findBoard(ws, boardId);
+    if (!board) return;
+
+    const list = findList(board, listId);
+    if (!list) return;
+
+    list.tasks = list.tasks.map((t) =>
+        t.id === taskId ? { ...t, description } : t
+    );
+
+    set({ workspaces: updated });
+},
+
     /**
      * Elimina una task
      */
