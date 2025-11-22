@@ -1,5 +1,5 @@
 "use client";
-
+import React from "react";
 import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { arrayMove, SortableContext } from "@dnd-kit/sortable";
 import { useState, useEffect } from "react";
@@ -8,8 +8,10 @@ import { useLiaStore } from "@/store/UseLiaStore";
 import type { BoardList } from "@/types/workspace";
 import { TaskCardPreview } from "@/components/tasks/taskCardPreview";
 import { horizontalListSortingStrategy } from "@dnd-kit/sortable";
-import { SortableListColumn } from "@/components/boards/sortableListColumn";
 import { ListColumn } from "@/components/boards/listColumns";
+import { GapSlot } from "@/components/boards/gapSlot";
+import { ColumnSlot } from "@/components/boards/ColumnSlot";
+import { ColumnsManager } from "@/components/boards/columnsManager";
 
 
 export default function BoardPage() {
@@ -214,58 +216,48 @@ export default function BoardPage() {
             }
 
     return (
-        <section className="h-full w-full overflow-hidden bg-[#111111]">
-            <DndContext   
-                sensors={sensors}
-                onDragStart={handleDragStart}
-                onDragEnd={handleDragEnd}
-                collisionDetection={closestCenter}
-            >
-                <SortableContext
-                    items={tempLists.map(l => l.id)}
-                    strategy={horizontalListSortingStrategy}
-                >
-                    <ul className="flex items-start gap-4 h-full overflow-x-auto px-6 py-6 scrollbar-thin scrollbar-thumb-accent/30 scrollbar-track-transparent">
+        <section className="relative w-full" style={{ height: "calc(100vh - 100px)" }}>
+            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <ColumnsManager>
+                    <SortableContext items={tempLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+                        {tempLists.map((list) => (
+                            <React.Fragment key={list.id}>
+                                
+                                <GapSlot />
 
-                    {tempLists.map((list) => (
-                        <SortableListColumn
-                            key={list.id}
-                            id={list.id}
-                            title={list.title}
-                            tasks={list.tasks}
-                            onAddTask={() => handleAddTask(list.id)}
-                        />
-
-                    ))}
-
-                    <li>
-                    <button
-                        onClick={handleCreateList}
-                        className="min-w-64 h-fit rounded-lg bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent text-left hover:bg-accent/20 transition"
-                    >
-                        + Añadir lista
-                    </button>
-                    </li>
-                    </ul>
-                </SortableContext>
-                    <DragOverlay>
-                        {activeTask && <TaskCardPreview task={activeTask} />}
-
-                        {activeList && (() => {
-                            const list = tempLists.find(l => l.id === activeList);
-                            if (!list) return null;
-
-                            return (
-                                <ListColumn
+                                <ColumnSlot 
                                     id={list.id}
                                     title={list.title}
                                     tasks={list.tasks}
-                                    onAddTask={() => {}}
-                                    dragHandleProps={{}}   // ← ESTE PROP ES OBLIGATORIO
+                                    onAddTask={() => handleAddTask(list.id)}
                                 />
-                            );
-                        })()}
-                    </DragOverlay>
+                                <GapSlot />
+                            </React.Fragment>
+                        ))}
+                    </SortableContext>
+                    {/* botón añadir lista */}
+                    <button className="inline-block w-64 h-fit rounded-lg bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent text-left hover:bg-accent/20 transition" onClick={handleCreateList}>
+                        + Añadir lista
+                    </button>
+                </ColumnsManager>
+                {/* Overlay visual */}
+                <DragOverlay>
+                    {activeTask && <TaskCardPreview task={activeTask} />}
+
+                    {activeList && (() => {
+                        const list = tempLists.find((l) => l.id === activeList);
+                        if (!list) return null;
+                        return (
+                            <ListColumn
+                                id={list.id}
+                                title={list.title}
+                                tasks={list.tasks}
+                                onAddTask={() => handleAddTask(list.id)}
+                                dragHandleProps={{}}
+                            />
+                        );
+                    })()}
+                </DragOverlay>
             </DndContext>
         </section>
     );

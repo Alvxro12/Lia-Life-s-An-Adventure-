@@ -21,9 +21,7 @@ export function SortableListColumn(props: Props) {
         transform,
         transition,
         isDragging,
-    } = useSortable({
-        id: props.id,
-    });
+    } = useSortable({ id: props.id });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -31,17 +29,24 @@ export function SortableListColumn(props: Props) {
     };
 
     return (
-        <div
+        <div className="h-full flex flex-col pointer-events-auto">
+        <li
             ref={setNodeRef}
             style={style}
-            className={`min-w-64 max-w-64 flex flex-col rounded-xl ${
-                isDragging ? "opacity-50" : ""
-            }`}
+            className="
+                list-none
+                flex
+                justify-center
+            "
         >
-            <ListColumn
-                {...props}
-                dragHandleProps={{ ...listeners, ...attributes }}
-            />
-        </div>
+            {/* ⬅️ wrapper FLEXIBLE dentro del hitbox */}
+
+                <ListColumn
+                    {...props}
+                    dragHandleProps={{ ...attributes, ...listeners }}
+                    isDragging={isDragging}
+                />
+        </li>
+            </div>
     );
 }
