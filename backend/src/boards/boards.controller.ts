@@ -27,7 +27,7 @@ export class BoardsController {
     /**
      * Lista todos los boards del workspace si el usuario es miembro.
      */
-    @Get(':workspaceId')
+    @Get('workspace/:workspaceId')
     findAll(@Param('workspaceId') workspaceId: string, @User('id') userId: number) {
         return this.boardsService.findAll(Number(workspaceId), userId);
     }
@@ -35,7 +35,7 @@ export class BoardsController {
     /**
      * Retorna un board con sus tareas.
      */
-    @Get('view/:id')
+    @Get(':id')
     findOne(@Param('id') id: string, @User('id') userId: number) {
         return this.boardsService.findOne(Number(id), userId);
     }

@@ -1,4 +1,4 @@
-import { PrismaClient, Role, WorkspaceRole } from '@prisma/client';
+import { PrismaClient, Role, WorkspaceRole, TaskStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -14,13 +14,13 @@ async function main() {
             name: 'Administrador',
             email: 'admin@lia.com',
             password: hashedPassword,
-            level: 99,
-            xp: 9999,
+            level: 1,
+            xp: 0,
             role: Role.ADMIN,
         },
     });
 
-    // 🏠 Crear Workspace asociado al admin
+    // 🏠 Crear Workspace
     const workspace = await prisma.workspace.create({
         data: {
             name: 'LIA HQ',
@@ -37,32 +37,80 @@ async function main() {
         },
     });
 
-    // 📋 Crear Board de ejemplo dentro del workspace
+    // 📋 Crear Board
     const board = await prisma.board.create({
         data: {
             title: 'Misión Principal',
             description: 'Primer tablero de ejemplo',
-            workspaceId: workspace.id, // ✅ obligatorio ahora
-            userId: admin.id, // sigue existiendo en tu schema (para referencia)
+            workspaceId: workspace.id,
+            userId: admin.id,
+            order: 0,
         },
     });
 
-    // ✅ Crear una tarea asociada a ese board
-    const task = await prisma.task.create({
+    // 📑 Crear Listas (Todo, Doing, Done)
+    const todo = await prisma.list.create({
         data: {
-            title: 'Completa tu primera misión',
-            description: 'Arrastra y suelta esta tarea a "Completadas"',
-            xpReward: 50,
+            title: 'Por hacer',
+            order: 0,
             boardId: board.id,
         },
     });
 
-    // ⭐ Registrar progreso del admin
+    const doing = await prisma.list.create({
+        data: {
+            title: 'En progreso',
+            order: 1,
+            boardId: board.id,
+        },
+    });
+
+    const done = await prisma.list.create({
+        data: {
+            title: 'Completadas',
+            order: 2,
+            boardId: board.id,
+        },
+    });
+
+    // 📝 Tasks asociadas a listas
+    const task1 = await prisma.task.create({
+        data: {
+            title: 'Completa tu primera misión',
+            description: 'Arrastra esta tarea a Completadas.',
+            xpReward: 50,
+            status: TaskStatus.TO_DO,
+            listId: todo.id,
+            order: 0,
+        },
+    });
+
+    const task2 = await prisma.task.create({
+        data: {
+            title: 'Explora el tablero',
+            xpReward: 30,
+            status: TaskStatus.IN_PROGRESS,
+            listId: doing.id,
+            order: 0,
+        },
+    });
+
+    const task3 = await prisma.task.create({
+        data: {
+            title: 'Bienvenido a LIA 🎉',
+            xpReward: 10,
+            status: TaskStatus.DONE,
+            listId: done.id,
+            order: 0,
+        },
+    });
+
+    // ⭐ Registrar progreso (solo para la tarea 3)
     await prisma.progress.create({
         data: {
-            xpEarned: 50,
+            xpEarned: 10,
             userId: admin.id,
-            taskId: task.id,
+            taskId: task3.id,
         },
     });
 

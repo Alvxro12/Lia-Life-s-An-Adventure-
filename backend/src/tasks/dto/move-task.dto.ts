@@ -1,19 +1,9 @@
-import { IsEnum, IsInt, IsOptional } from 'class-validator';
-import { TaskStatus } from '@prisma/client';
+import { IsInt } from 'class-validator';
 
-/**
- * DTO para mover una tarea entre boards o columnas.
- * Se puede modificar el boardId, el estado o el orden.
- */
 export class MoveTaskDto {
     @IsInt()
-    boardId: number;
-
-    @IsEnum(TaskStatus)
-    @IsOptional()
-    status?: TaskStatus;
+    newListId: number;
 
     @IsInt()
-    @IsOptional()
-    order?: number;
+    newOrder: number;
 }

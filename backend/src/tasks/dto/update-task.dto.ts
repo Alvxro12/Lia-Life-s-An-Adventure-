@@ -1,10 +1,6 @@
 import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 import { TaskStatus } from '@prisma/client';
 
-/**
- * DTO para actualizar los datos de una tarea.
- * Permite cambios parciales (título, descripción, estado u orden).
- */
 export class UpdateTaskDto {
     @IsString()
     @IsOptional()

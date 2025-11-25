@@ -1,135 +1,148 @@
 generator client {
-    provider = "prisma-client-js"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-    provider = "postgresql"
-    url      = env("DATABASE_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─────────────── MODELOS PRINCIPALES ───────────────
 
 model User {
-    id        Int      @id @default(autoincrement())
-    name      String
-    email     String   @unique
-    password  String
-    xp        Int      @default(0)
-    level     Int      @default(1)
-    avatar    String?
-    role      Role     @default(USER)
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  password  String
+  xp        Int      @default(0)
+  level     Int      @default(1)
+  avatar    String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-    boards   Board[]
-    progress Progress[]
+  boards   Board[]
+  progress Progress[]
 
-    assignedTasks        Task[]            @relation("AssignedTasks")
-    workspaceMemberships WorkspaceMember[]
-    Workspace            Workspace[]
+  assignedTasks        Task[]            @relation("AssignedTasks")
+  workspaceMemberships WorkspaceMember[]
+  Workspace            Workspace[]
 }
 
 model Workspace {
-    id          Int      @id @default(autoincrement())
-    name        String
-    description String?
-    ownerId     Int? // opcional, para auditoría/UX
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String?
+  ownerId     Int? // opcional, para auditoría/UX
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    owner   User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
-    members WorkspaceMember[]
-    boards  Board[]
+  owner   User?             @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  members WorkspaceMember[]
+  boards  Board[]
 
-    @@unique([name, ownerId]) // evita duplicados por propietario
-    @@index([ownerId])
+  @@unique([name, ownerId]) // evita duplicados por propietario
+  @@index([ownerId])
 }
 
 model WorkspaceMember {
-    id          Int           @id @default(autoincrement())
-    userId      Int
-    workspaceId Int
-    role        WorkspaceRole @default(MEMBER)
+  id          Int           @id @default(autoincrement())
+  userId      Int
+  workspaceId Int
+  role        WorkspaceRole @default(MEMBER)
 
-    user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-    workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-    @@unique([userId, workspaceId])
-    @@index([workspaceId, role])
-    @@index([userId])
+  @@unique([userId, workspaceId])
+  @@index([workspaceId, role])
+  @@index([userId])
 }
 
 model Board {
-    id          Int      @id @default(autoincrement())
-    title       String
-    description String?
-    order       Int      @default(0)
-    createdAt   DateTime @default(now())
-    updatedAt   DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
-    workspaceId Int
-    workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId Int
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-    userId Int
-    user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
-    tasks  Task[]
+  userId Int
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-    @@index([workspaceId])
+  lists List[]
+
+  @@index([workspaceId])
+}
+
+model List {
+  id        Int      @id @default(autoincrement())
+  title     String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  boardId Int
+  board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+
+  tasks Task[]
 }
 
 model Task {
-    id          Int        @id @default(autoincrement())
-    title       String
-    description String?
-    status      TaskStatus @default(TO_DO)
-    xpReward    Int        @default(10)
-    order       Int        @default(0)
-    createdAt   DateTime   @default(now())
-    updatedAt   DateTime   @updatedAt
+  id          Int        @id @default(autoincrement())
+  title       String
+  description String?
+  status      TaskStatus @default(TO_DO)
+  xpReward    Int        @default(10)
+  order       Int        @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
-    boardId Int
-    board   Board @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  listId  Int
+  list    List @relation(fields: [listId], references: [id], onDelete: Cascade)
 
-    assignedToId Int? // 👈 futura expansión: responsable de la tarea
-    assignedTo   User? @relation("AssignedTasks", fields: [assignedToId], references: [id])
+  assignedToId Int?
+  assignedTo   User? @relation("AssignedTasks", fields: [assignedToId], references: [id])
 
-    progress Progress[]
+  progress Progress[]
 
-    @@index([boardId])
-    @@index([status])
+  @@index([listId])
 }
 
 model Progress {
-    id        Int      @id @default(autoincrement())
-    xpEarned  Int
-    createdAt DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  xpEarned  Int
+  createdAt DateTime @default(now())
 
-    userId Int
-    taskId Int
+  userId Int
+  taskId Int
 
-    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-    task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
 
-    @@index([userId])
-    @@index([taskId])
+  @@index([userId])
+  @@index([taskId])
 }
 
 // ─────────────── ENUMS ───────────────
 
 enum TaskStatus {
-    TO_DO
-    IN_PROGRESS
-    DONE
-    BLOCKED
+  TO_DO
+  IN_PROGRESS
+  DONE
+  BLOCKED
 }
 
 enum WorkspaceRole {
-    OWNER
-    ADMIN
-    MEMBER
+  OWNER
+  ADMIN
+  MEMBER
 }
 
 enum Role {
-    USER
-    ADMIN
+  USER
+  ADMIN
 }
