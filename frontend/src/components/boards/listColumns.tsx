@@ -80,7 +80,7 @@ export function ListColumn({
                 onClick={() => onAddTask(id)}
                 className="flex-none px-3 py-2 text-xs text-accent/70 hover:text-accent hover:bg-accent/10 transition"
             >
-                + Añadir tarea
+                <span className="mr-2">+</span> <span>Añadir tarea</span>
             </button>
         </div>
     );

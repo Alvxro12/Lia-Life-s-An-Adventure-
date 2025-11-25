@@ -44,16 +44,33 @@ function handleToggleCompleted(e: React.ChangeEvent<HTMLInputElement>) {
             <div ref={setNodeRef} style={style} {...attributes} {...listeners} className={`w-full rounded-[10px] px-3 py-2 text-sm border select-none cursor-pointer transition-all duration-150 ${isDragging ? "bg-[#2d2d2d] border-white/20 shadow-[0_8px_20px_rgba(0,0,0,0.6)] scale-[1.03]" : "bg-[#242424] border-white/10 text-[#EAE6D9] hover:bg-[#2a2a2a] hover:shadow-[0_2px_8px_rgba(0,0,0,0.45)]"}`}>
                 <div className="flex items-center justify-between">
                     
+                    {/* Toggle completado */}
+                    <input
+                        type="checkbox"
+                        checked={localCompleted}
+                        onChange={handleToggleCompleted}
+                        className="
+                            appearance-none
+                            w-4 h-4 
+                            mr-2
+                            rounded-full 
+                            border-2 
+                            border-accent 
+                            cursor-pointer 
+                            transition-all 
+                            duration-150
+                            checked:bg-accent 
+                            checked:border-accent 
+                            checked:shadow-[0_0_8px_rgba(191,163,92,0.6)]
+                        "
+                    />
+
+
                     {/* Título editable */}
                     <span onClick={() => setIsOpen(true)} className="flex-1 cursor-pointer">{task.title}</span>
 
-                    {/* Toggle completado */}
-                    <input 
-                        type="checkbox"
-                        className="ml-2 cursor-pointer"
-                        checked={localCompleted}
-                        onChange={handleToggleCompleted}
-                    />
+
+
 
                 </div>
                 {showSparkle && <span className="lia-sparkle"></span>}
