@@ -3,6 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { AuthService } from "@/services/authService";
+import { AuthToken } from "@/utils/auth";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -10,26 +12,29 @@ export default function RegisterPage() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [name, setName] = useState("");
+    const [loading, setLoading] = useState(false);
 
-    function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
-
-        console.log("Registro:", { name, email, password });
-
-        // TODO: conectar con backend
-        router.push("/workspace");
+async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    try {
+        await AuthService.register(name, email, password);
+        router.push("/login");
+    } catch (err: any) {
+        alert(err.message);
     }
+}
+
 
     return (
         <div className="flex min-h-screen items-center justify-center px-4 bg-background text-text">
             <div className="w-full max-w-sm bg-card border border-accent/20 rounded-xl p-6 shadow-lg">
-                
+
                 <h1 className="text-2xl font-serif text-accent mb-6 text-center">
                     Crear cuenta
                 </h1>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    
+
                     <div className="flex flex-col gap-1">
                         <label className="text-sm">Nombre</label>
                         <input
@@ -68,9 +73,10 @@ export default function RegisterPage() {
 
                     <button
                         type="submit"
+                        disabled={loading}
                         className="w-full rounded-md bg-accent text-accent-foreground py-2 text-sm font-medium hover:bg-accent/80 transition"
                     >
-                        Crear cuenta
+                        {loading ? "Creando..." : "Crear cuenta"}
                     </button>
                 </form>
 

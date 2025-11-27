@@ -15,9 +15,9 @@ export const ListService = {
      * Crea una nueva lista dentro de un board.
      */
     create(
-        workspaceId: string,
-        boardId: string,
-        payload: { id: string; title: string; tasks?: any[] },
+        workspaceId: number,
+        boardId: number,
+        payload: { id: number; title: string; tasks?: any[] },
         set: SetFn,
         get: GetFn
     ) {
@@ -44,9 +44,9 @@ export const ListService = {
      * Actualiza una lista
      */
     update(
-        workspaceId: string,
-        boardId: string,
-        listId: string,
+        workspaceId: number,
+        boardId: number,
+        listId: number,
         changes: Partial<BoardList>,
         set: SetFn,
         get: GetFn
@@ -70,7 +70,7 @@ export const ListService = {
     /**
      * Elimina una lista completa
      */
-    delete(workspaceId: string, boardId: string, listId: string, set: SetFn, get: GetFn) {
+    delete(workspaceId: number, boardId: number, listId: number, set: SetFn, get: GetFn) {
         const { workspaces } = get();
         const updated = structuredClone(workspaces);
 
@@ -89,8 +89,8 @@ export const ListService = {
      * Mueve una lista dentro del board (drag & drop)
      */
     move(
-        workspaceId: string,
-        boardId: string,
+        workspaceId: number,
+        boardId: number,
         oldIndex: number,
         newIndex: number,
         set: SetFn,

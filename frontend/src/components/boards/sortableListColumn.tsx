@@ -6,11 +6,11 @@ import { ListColumn } from "./listColumns";
 import type { Task } from "@/types/workspace";
 
 type Props = {
-    id: string;
+    id: number;
     title: string;
     tasks: Task[];
-    onAddTask: (listId: string) => void;
-    onUpdateTitle?: (listId: string, newTitle: string) => void;
+    onAddTask: (listId: number) => void;
+    onUpdateTitle?: (listId: number, newTitle: string) => void;
 };
 
 export function SortableListColumn(props: Props) {
@@ -44,7 +44,6 @@ export function SortableListColumn(props: Props) {
                 <ListColumn
                     {...props}
                     dragHandleProps={{ ...attributes, ...listeners }}
-                    isDragging={isDragging}
                 />
         </li>
             </div>

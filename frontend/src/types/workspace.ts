@@ -1,26 +1,28 @@
-export interface Task {
-    id: string;
-    title: string;
-    completed: boolean;
-    xp: number;
+export interface Workspace {
+    id: number;
+    name: string;
     description?: string;
+    boards: Board[];
+}
+
+export interface Board {
+    id: number;
+    title: string;
+    description: string;
+    order: number;
+    lists: BoardList[];
 }
 
 export interface BoardList {
-    id: string;
+    id: number;
     title: string;
     tasks: Task[];
 }
 
-export interface Board {
-    id: string;
-    name: string;
-    lists: BoardList[];
-}
-
-export interface Workspace {
-    id: string;
-    name: string;
+export interface Task {
+    id: number;
+    title: string;
+    completed: boolean;
+    xp: number;
     description?: string;
-    boards: Board[];
 }

@@ -1,260 +1,350 @@
 "use client";
-import React from "react";
-import { DndContext, DragOverlay, closestCenter, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
-import { arrayMove, SortableContext } from "@dnd-kit/sortable";
-import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import React, { useState, useEffect } from "react";
+import { useParams, useRouter } from "next/navigation";
+
+import {
+    DndContext,
+    DragOverlay,
+    useSensors,
+    useSensor,
+    PointerSensor,
+    rectIntersection,
+    type CollisionDetection,
+} from "@dnd-kit/core";
+
+import {
+    SortableContext,
+    horizontalListSortingStrategy,
+} from "@dnd-kit/sortable";
+
 import { useLiaStore } from "@/store/UseLiaStore";
 import type { BoardList } from "@/types/workspace";
+import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
+
 import { TaskCardPreview } from "@/components/tasks/taskCardPreview";
-import { horizontalListSortingStrategy } from "@dnd-kit/sortable";
 import { ListColumn } from "@/components/boards/listColumns";
 import { GapSlot } from "@/components/boards/gapSlot";
 import { ColumnSlot } from "@/components/boards/ColumnSlot";
-import { ColumnsManager } from "@/components/boards/columnsManager"
+import { ColumnsManager } from "@/components/boards/columnsManager";
 
+
+// ==================================================================
+// ⭐ COLISIÓN HORIZONTAL — versión final compatible con TS
+// ==================================================================
+const flatColumnCollision: CollisionDetection = ({
+    active,
+    collisionRect,
+    droppableRects,
+    droppableContainers,
+    pointerCoordinates,
+}) => {
+    if (!collisionRect) return [];
+
+    const viewHeight =
+        typeof window !== "undefined" ? window.innerHeight : 1500;
+
+    // Aplanamos la altura → evita que columnas grandes dominen colisión
+    const flatRect = {
+        ...collisionRect,
+        top: 0,
+        bottom: viewHeight,
+        height: viewHeight,
+    };
+
+    return rectIntersection({
+        active,
+        collisionRect: flatRect,
+        droppableRects,
+        droppableContainers,
+        pointerCoordinates,
+    });
+};
+
+
+// ==================================================================
+// COMPONENTE PRINCIPAL
+// ==================================================================
 export default function BoardPage() {
-    const params = useParams();
-    const workspaceId = params.workspaceId as string;
-    const boardId = params.boardId as string;
 
-    const moveTask = useLiaStore((s) => s.moveTask);
-    const workspace = useLiaStore((s) => s.workspaces.find((w) => w.id === workspaceId));
+    const params = useParams();
+    const router = useRouter();
+
+    const workspaceId = Number(params.workspaceId);
+    const boardId = Number(params.boardId);
+
+    const loadBoards = useLiaStore((s) => s.loadBoards);
+
+    const workspace = useLiaStore((s) =>
+        s.workspaces.find((w) => Number(w.id) === workspaceId)
+    );
     const board = workspace?.boards.find((b) => b.id === boardId);
 
+    const [loading, setLoading] = useState(true);
     const [tempLists, setTempLists] = useState<BoardList[]>([]);
     const [activeTask, setActiveTask] = useState<any>(null);
-    const [activeList, setActiveList] = useState<string | null>(null);
-    
+    const [activeList, setActiveList] = useState<number | null>(null);
+
+
+    // Sensor estilo Trello
     const sensors = useSensors(
-    useSensor(PointerSensor, {
-        activationConstraint: {
-            delay: 100,      // Trello-style HOLD
-            tolerance: 5,    // evitar drags accidentales
-        },
-    })
-);
+        useSensor(PointerSensor, {
+            activationConstraint: { delay: 100, tolerance: 5 },
+        })
+    );
+
+
+    // ==================================================================
+    // LOAD DATA
+    // ==================================================================
+    useEffect(() => {
+        async function load() {
+            await loadBoards(workspaceId);
+            setLoading(false);
+        }
+        load();
+    }, [workspaceId]);
 
 
     useEffect(() => {
         if (!board) return;
         setTempLists(board.lists.map((l) => ({ ...l, tasks: [...l.tasks] })));
-    }, [board?.id]);
+    }, [board?.id, board?.lists]);
 
-    // Buscar lista por ID
-    const findListByTaskId = (taskId: string) => {
-        return tempLists.find((l) => l.tasks.some((t) => t.id === taskId));
-    };
 
-    const findTask = (taskId: string) => {
+    if (loading) {
+        return (
+            <div className="h-full w-full flex items-center justify-center text-accent">
+                Cargando tablero...
+            </div>
+        );
+    }
+
+    if (!board) {
+        return (
+            <div className="p-10 text-center text-red-400">
+                No se encontró este tablero.
+            </div>
+        );
+    }
+
+
+    // ==================================================================
+    // HELPERS
+    // ==================================================================
+    const findListByTaskId = (taskId: number) =>
+        tempLists.find((l) => l.tasks.some((t) => t.id === taskId));
+
+    const findTask = (taskId: number) => {
         for (const list of tempLists) {
-            const task = list.tasks.find((t) => t.id === taskId);
-            if (task) return task;
+            const t = list.tasks.find((t) => t.id === taskId);
+            if (t) return t;
         }
         return null;
     };
 
-    // Cuando empieza el drag
-    function handleDragStart(event: any) {
-        const id = String(event.active.id);
 
-        const task = findTask(id);
+    // ==================================================================
+    // DRAG START
+    // ==================================================================
+    function handleDragStart(e: DragStartEvent) {
+        const rawId = String(e.active.id);
 
-        if (task) {
-            // Es una TASK
+        if (rawId.startsWith("task-")) {
+            const id = Number(rawId.replace("task-", ""));
+            const task = findTask(id);
             setActiveTask(task);
             setActiveList(null);
-        } else {
-            // Es una LISTA
-            setActiveTask(null);
+        }
+
+        else if (rawId.startsWith("list-")) {
+            const id = Number(rawId.replace("list-", ""));
             setActiveList(id);
+            setActiveTask(null);
         }
     }
 
 
-    // Cuando termina el drag
-    function handleDragEnd(event: any) {
-        const { active, over } = event;
+    // ==================================================================
+    // DRAG END
+    // ==================================================================
+    function handleDragEnd(e: DragEndEvent) {
+        const { active, over } = e;
+
         setActiveTask(null);
+        setActiveList(null);
 
-        if (!over) {
-            setActiveList(null);
-            return;
-        }
+        if (!over) return;
 
-        const activeId = String(active.id);
-        const overId = String(over.id);
+        const rawActive = String(active.id);
+        const rawOver = String(over.id);
 
-        if (activeId === overId) {
-            setActiveList(null);
-            return;
-        }
-
-        // 1️⃣ CASO: MOVER LISTAS
-        if (activeList) {
-            const overList = tempLists.find((l) => l.id === overId);
-
-            // Solo permitimos drops sobre LISTAS, no sobre TASKS
-            if (!overList) {
-                setActiveList(null);
-                return;
-            }
+        // ============================
+        // MOVE LISTS
+        // ============================
+        if (rawActive.startsWith("list-") && rawOver.startsWith("list-")) {
+            const activeId = Number(rawActive.replace("list-", ""));
+            const overId = Number(rawOver.replace("list-", ""));
 
             const oldIndex = tempLists.findIndex((l) => l.id === activeId);
-            const newIndex = tempLists.findIndex((l) => l.id === overList.id);
+            const newIndex = tempLists.findIndex((l) => l.id === overId);
+            if (oldIndex === -1 || newIndex === -1) return;
 
-            if (oldIndex === -1 || newIndex === -1) {
-                setActiveList(null);
-                return;
-            }
+            const reordered = [...tempLists];
+            const [removed] = reordered.splice(oldIndex, 1);
+            reordered.splice(newIndex, 0, removed);
 
-            const reOrdered = arrayMove(tempLists, oldIndex, newIndex);
-            setTempLists(reOrdered);
+            setTempLists(reordered);
 
-            requestAnimationFrame(() => {
-                useLiaStore.getState().moveList(workspaceId, boardId, oldIndex, newIndex);
-            });
-
-            setActiveList(null);
+            useLiaStore.getState().moveList(workspaceId, boardId, oldIndex, newIndex);
             return;
         }
 
-        // 2️⃣ CASO: MOVER TAREAS
-        const fromList = findListByTaskId(activeId);
-        if (!fromList) return;
+        // ============================
+        // MOVE TASKS
+        // ============================
+        if (rawActive.startsWith("task-")) {
+            const activeId = Number(rawActive.replace("task-", ""));
+            const overId = Number(rawOver.replace("task-", ""));
 
-        let toList =
-            findListByTaskId(overId) ||
-            tempLists.find((l) => l.id === overId);
+            const fromList = findListByTaskId(activeId);
+            if (!fromList) return;
 
-        if (!toList) return;
+            let toList =
+                findListByTaskId(overId) ||
+                tempLists.find((l) => l.id === overId);
 
-        const listsCopy = structuredClone(tempLists);
+            if (!toList) return;
 
-        const fromListIndex = listsCopy.findIndex((l) => l.id === fromList.id);
-        const toListIndex = listsCopy.findIndex((l) => l.id === toList!.id);
+            const clone = structuredClone(tempLists);
 
-        const fromTasks = listsCopy[fromListIndex].tasks;
-        const toTasks = listsCopy[toListIndex].tasks;
+            const fromIndex = clone.findIndex((l) => l.id === fromList.id);
+            const toIndex = clone.findIndex((l) => l.id === toList.id);
 
-        const oldIndex = fromTasks.findIndex((t) => t.id === activeId);
+            const fromTasks = clone[fromIndex].tasks;
+            const toTasks = clone[toIndex].tasks;
 
-        let newIndex = toTasks.findIndex((t) => t.id === overId);
-        if (newIndex === -1) {
-            newIndex = toTasks.length;
+            const oldTaskIndex = fromTasks.findIndex((t) => t.id === activeId);
+            let newTaskIndex = toTasks.findIndex((t) => t.id === overId);
+            if (newTaskIndex === -1) newTaskIndex = toTasks.length;
+
+            if (fromList.id === toList.id) {
+                const [moved] = fromTasks.splice(oldTaskIndex, 1);
+                fromTasks.splice(newTaskIndex, 0, moved);
+            } else {
+                const [moved] = fromTasks.splice(oldTaskIndex, 1);
+                toTasks.splice(newTaskIndex, 0, moved);
+            }
+
+            setTempLists(clone);
+
+            useLiaStore
+                .getState()
+                .moveTask(workspaceId, boardId, fromList.id, toList.id, oldTaskIndex, newTaskIndex);
         }
+    }
 
-        if (fromList.id === toList.id) {
-            listsCopy[fromListIndex].tasks = arrayMove(fromTasks, oldIndex, newIndex);
-        } else {
-            const [moved] = fromTasks.splice(oldIndex, 1);
-            toTasks.splice(newIndex, 0, moved);
-        }
 
-        setTempLists(listsCopy);
+    // ==================================================================
+    // CREATE LIST
+    // ==================================================================
+    function handleCreateList() {
+        const newList = {
+            id: Date.now(),
+            title: `Lista ${tempLists.length + 1}`,
+            tasks: [],
+        };
 
-        requestAnimationFrame(() => {
-            moveTask(workspaceId, boardId, fromList.id, toList.id, oldIndex, newIndex);
-        });
+        useLiaStore.getState().createList(workspaceId, boardId, newList);
+
+        const ws = useLiaStore.getState().workspaces.find((w) => w.id === workspaceId);
+        const b = ws?.boards.find((b) => b.id === boardId);
+        if (!b) return;
+
+        setTempLists(b.lists.map((l) => ({ ...l, tasks: [...l.tasks] })));
+    }
+
+
+    // ==================================================================
+    // ADD TASK
+    // ==================================================================
+    function handleAddTask(listId: number) {
+        const newTask = {
+            id: Date.now(),
+            title: "Nueva tarea",
+            xp: 10,
+            completed: false,
+        };
+
+        useLiaStore.getState().createTask(workspaceId, boardId, listId, newTask);
+
+        const ws = useLiaStore.getState().workspaces.find((w) => w.id === workspaceId);
+        const b = ws?.boards.find((b) => b.id === boardId);
+        if (!b) return;
+
+        setTempLists(b.lists.map((l) => ({ ...l, tasks: [...l.tasks] })));
     }
 
 
 
-
-            function handleCreateList() {
-                const newList = {
-                    id: crypto.randomUUID(),
-                    title: `Lista ${tempLists.length + 1}`,
-                    tasks: [],
-                };
-
-                useLiaStore.getState().createList(workspaceId, boardId, newList);
-
-                const state = useLiaStore.getState();
-                const workspaceUpdated = state.workspaces.find((w) => w.id === workspaceId);
-                if (!workspaceUpdated) return;
-
-                const boardUpdated = workspaceUpdated.boards.find((b) => b.id === boardId);
-                if (!boardUpdated) return;
-
-                const clonedLists = boardUpdated.lists.map((l) => ({
-                    ...l,
-                    tasks: [...l.tasks],
-                }));
-
-                setTempLists(clonedLists);
-            }
-
-
-        // Añadir tarea a una lista
-            function handleAddTask(listId: string) {
-                const newTask = {
-                    id: crypto.randomUUID(),
-                    title: "Nueva tarea",
-                    xp: 10,
-                };
-
-                // 1) Actualizamos el store (fuente de la verdad)
-                useLiaStore.getState().createTask(workspaceId, boardId, listId, newTask);
-
-                // 2) Leemos el estado ACTUALIZADO desde el store
-                const state = useLiaStore.getState();
-                const workspaceUpdated = state.workspaces.find((w) => w.id === workspaceId);
-                if (!workspaceUpdated) return;
-
-                const boardUpdated = workspaceUpdated.boards.find((b) => b.id === boardId);
-                if (!boardUpdated) return;
-
-                // 3) Reseteamos tempLists en base al board real
-                const clonedLists = boardUpdated.lists.map((l) => ({
-                    ...l,
-                    tasks: [...l.tasks],
-                }));
-
-                setTempLists(clonedLists);
-            }
-
+    // ==================================================================
+    // RENDER
+    // ==================================================================
     return (
-        <section className="relative w-full" style={{ height: "calc(100vh - 218px)" }}>
-            <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+        <section
+            className="relative w-full"
+            style={{ height: "calc(100vh - 218px)" }}
+        >
+            <DndContext
+                sensors={sensors}
+                collisionDetection={flatColumnCollision}
+                onDragStart={handleDragStart}
+                onDragEnd={handleDragEnd}
+            >
                 <ColumnsManager>
-                    <SortableContext items={tempLists.map((l) => l.id)} strategy={horizontalListSortingStrategy}>
+                    <SortableContext
+                        items={tempLists.map((l) => `list-${l.id}`)}
+                        strategy={horizontalListSortingStrategy}
+                    >
                         {tempLists.map((list) => (
-                            <React.Fragment key={list.id}>
-                                
+                            <React.Fragment key={`list-${list.id}`}>
                                 <GapSlot />
 
-                                <ColumnSlot 
+                                <ColumnSlot
                                     id={list.id}
                                     title={list.title}
                                     tasks={list.tasks}
                                     onAddTask={() => handleAddTask(list.id)}
                                 />
+
                                 <GapSlot />
                             </React.Fragment>
                         ))}
                     </SortableContext>
-                    {/* botón añadir lista */}
-                    <button className="inline-block w-64 h-fit rounded-lg bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent text-left hover:bg-accent/20 transition" onClick={handleCreateList}>
+
+                    <button
+                        className="inline-block w-64 h-fit rounded-lg bg-accent/10 border border-accent/30 px-4 py-3 text-sm font-medium text-accent text-left hover:bg-accent/20"
+                        onClick={handleCreateList}
+                    >
                         + Añadir lista
                     </button>
                 </ColumnsManager>
-                {/* Overlay visual */}
+
                 <DragOverlay>
                     {activeTask && <TaskCardPreview task={activeTask} />}
-                    {activeList && (() => {
-                        const list = tempLists.find((l) => l.id === activeList);
-                        if (!list) return null;
-                        return (
-                            <ListColumn
-                                id={list.id}
-                                title={list.title}
-                                tasks={list.tasks}
-                                onAddTask={() => handleAddTask(list.id)}
-                                dragHandleProps={{}}
-                            />
-                        );
-                    })()}
+                    {activeList &&
+                        (() => {
+                            const list = tempLists.find((l) => l.id === activeList);
+                            if (!list) return null;
+                            return (
+                                <ListColumn
+                                    id={list.id}
+                                    title={list.title}
+                                    tasks={list.tasks}
+                                    onAddTask={() => handleAddTask(list.id)}
+                                    dragHandleProps={{}}
+                                />
+                            );
+                        })()}
                 </DragOverlay>
             </DndContext>
         </section>

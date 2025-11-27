@@ -5,7 +5,7 @@ import type { Workspace, Board, BoardList } from "@/types/workspace";
  */
 export function findWorkspace(
     workspaces: Workspace[],
-    id: string
+    id: number
 ): Workspace | undefined {
     return workspaces.find((w) => w.id === id);
 }
@@ -15,7 +15,7 @@ export function findWorkspace(
  */
 export function findBoard(
     workspace: Workspace,
-    id: string
+    id: number
 ): Board | undefined {
     return workspace.boards.find((b) => b.id === id);
 }
@@ -25,7 +25,7 @@ export function findBoard(
  */
 export function findList(
     board: Board,
-    id: string
+    id: number
 ): BoardList | undefined {
     return board.lists.find((l) => l.id === id);
 }

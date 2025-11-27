@@ -21,6 +21,7 @@ export const metadata: Metadata = {
         "Convierte tu vida en una aventura. LIA combina productividad y RPG en una experiencia única.",
 };
 
+
 export default function RootLayout({
     children,
 }: {

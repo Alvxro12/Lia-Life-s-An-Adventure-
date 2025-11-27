@@ -6,14 +6,14 @@ import { useLiaStore } from "@/store/UseLiaStore";
 
 type Props = {
     task: {
-        id: string;
+        id: number;
         title: string;
         xp?: number;
         completed: boolean;
         description?: string;
-        workspaceId: string;
-        boardId: string;
-        listId: string;
+        workspaceId: number;
+        boardId: number;
+        listId: number;
     };
     onClose: () => void;
 };

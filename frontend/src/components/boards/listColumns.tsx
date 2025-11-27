@@ -5,11 +5,11 @@ import type { Task } from "@/types/workspace";
 import { SortableTaskCard } from "@/components/tasks/sortableTaskCard";
 
 type Props = {
-    id: string;
+    id: number;
     title: string;
     tasks: Task[];
-    onAddTask: (listId: string) => void;
-    onUpdateTitle?: (listId: string, newTitle: string) => void;
+    onAddTask: (listId: number) => void;
+    onUpdateTitle?: (listId: number, newTitle: string) => void;
     dragHandleProps?: React.HTMLAttributes<HTMLDivElement>;
 };
 

@@ -14,10 +14,10 @@ export const TaskService = {
      * Crea una task dentro de una lista.
      */
     create(
-        workspaceId: string,
-        boardId: string,
-        listId: string,
-        payload: { id: string; title: string; xp?: number },
+        workspaceId: number,
+        boardId: number,
+        listId: number,
+        payload: { id: number; title: string; xp?: number },
         set: SetFn,
         get: GetFn
     ) {
@@ -47,7 +47,7 @@ export const TaskService = {
     /**
      * Cambia el estado completed de una task
      */
-    toggle(workspaceId: string, boardId: string, listId: string, taskId: string, set: SetFn, get: GetFn) {
+    toggle(workspaceId: number, boardId: number, listId: number, taskId: number, set: SetFn, get: GetFn) {
         const { workspaces } = get();
         const updated = structuredClone(workspaces);
 
@@ -70,7 +70,7 @@ export const TaskService = {
     /**
      * Edita título de una tarea
      */
-    updateTitle(workspaceId: string, boardId: string, listId: string, taskId: string, newTitle: string, set: SetFn, get: GetFn) {
+    updateTitle(workspaceId: number, boardId: number, listId: number, taskId: number, newTitle: string, set: SetFn, get: GetFn) {
         const { workspaces } = get();
         const updated = structuredClone(workspaces);
 
@@ -93,10 +93,10 @@ export const TaskService = {
 
     //Actualizar descripcion en el modal de la task
     updateDescription(
-    workspaceId: string,
-    boardId: string,
-    listId: string,
-    taskId: string,
+    workspaceId: number,
+    boardId: number,
+    listId: number,
+    taskId:     number,
     description: string,
     set: SetFn,
     get: GetFn
@@ -123,7 +123,7 @@ export const TaskService = {
     /**
      * Elimina una task
      */
-    delete(workspaceId: string, boardId: string, listId: string, taskId: string, set: SetFn, get: GetFn) {   
+    delete(workspaceId: number, boardId: number, listId: number, taskId: number, set: SetFn, get: GetFn) {   
         const { workspaces } = get();
         const updated = structuredClone(workspaces);
 
@@ -145,10 +145,10 @@ export const TaskService = {
      * Mueve tasks entre listas o dentro de la misma lista (drag & drop)
      */
     move(
-        workspaceId: string,
-        boardId: string,
-        sourceListId: string,
-        destListId: string,
+        workspaceId: number,
+        boardId: number,
+        sourceListId: number,
+        destListId: number,
         sourceIndex: number,
         destIndex: number,
         set: SetFn,
