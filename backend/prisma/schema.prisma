@@ -63,7 +63,6 @@ model Board {
   id          Int      @id @default(autoincrement())
   title       String
   description String?
-  order       Int      @default(0)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 

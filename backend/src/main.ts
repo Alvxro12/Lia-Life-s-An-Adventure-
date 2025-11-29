@@ -17,8 +17,10 @@ async function bootstrap() {
      * credentials: true → habilita envío de cookies o cabeceras auth.
      */
     app.enableCors({
-        origin: [process.env.WEB_ORIGIN ?? 'http://localhost:3000'],
-        credentials: true,
+    origin: [process.env.WEB_ORIGIN],
+    credentials: true,
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    allowedHeaders: 'Content-Type, Authorization',
     });
 
     /**
