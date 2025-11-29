@@ -15,17 +15,13 @@ export class BoardsService {
 
         if (!member) throw new ForbiddenException('No perteneces a este workspace');
 
-        const count = await this.prisma.board.count({
-            where: { workspaceId: dto.workspaceId },
-        });
-
+        // ❌ YA NO EXISTE order EN BOARD → eliminamos count
         return this.prisma.board.create({
             data: {
                 title: dto.title,
                 description: dto.description,
                 workspaceId: dto.workspaceId,
                 userId,
-                order: count,
             },
         });
     }
@@ -44,13 +40,13 @@ export class BoardsService {
                 lists: {
                     include: {
                         tasks: {
-                            orderBy: { order: 'asc' },
+                            orderBy: { order: 'asc' }, // ✔ tasks sí tienen order
                         },
                     },
-                    orderBy: { order: 'asc' },
+                    orderBy: { order: 'asc' }, // ✔ listas sí tienen order
                 },
             },
-            orderBy: { order: 'asc' },
+            // ❌ orderBy: { order: 'asc' } — se elimina
         });
     }
 
